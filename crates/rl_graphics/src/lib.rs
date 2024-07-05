@@ -1,21 +1,20 @@
 pub mod object;
 
-use std::{cell::RefCell, error::Error, sync::Arc};
+pub use wgpu;
+pub use winit;
 
-use bytemuck::{Pod, Zeroable};
-use std::{borrow::Cow, f32::consts, mem};
-use wgpu::util::DeviceExt;
+use std::{error::Error, sync::Arc};
 
 use winit::{
     event::{Event, KeyEvent, WindowEvent},
     event_loop::{EventLoop, EventLoopWindowTarget},
     keyboard::{Key, NamedKey},
-    raw_window_handle::RawWindowHandle,
     window::Window,
 };
 
 pub trait Renderable {
     fn render<'a>(&'a mut self, rpass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue);
+    fn resize(&mut self, width: u32, height: u32, queue: &wgpu::Queue);
 }
 
 pub struct Graphics {
@@ -38,7 +37,6 @@ impl Graphics {
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
                 force_fallback_adapter: false,
-                // Request an adapter which can render to our surface
                 compatible_surface: Some(&surface),
             })
             .await
@@ -95,9 +93,6 @@ impl Graphics {
     pub async fn run(mut self, event_loop: EventLoop<()>) {
         event_loop
             .run(|event: Event<()>, target: &EventLoopWindowTarget<()>| {
-                // Have the closure take ownership of the resources.
-                // `event_loop.run` never returns, therefore we must do this to ensure
-                // the resources are properly cleaned up.
                 let _ = (&self.instance, &self.adapter);
 
                 match event {
@@ -105,11 +100,9 @@ impl Graphics {
                         event: WindowEvent::Resized(size),
                         ..
                     } => {
-                        // Reconfigure the surface with the new size
                         self.config.width = size.width;
                         self.config.height = size.height;
                         self.surface.configure(&self.device, &self.config);
-                        // On macos the window needs to be redrawn manually after resizing
                         self.window.request_redraw();
                     }
 
@@ -119,11 +112,9 @@ impl Graphics {
                             self.config.height = size.height.max(1);
                             self.surface.configure(&self.device, &self.config);
 
-                            // let mx_total = generate_matrix(
-                            //     self.config.width as f32 / self.config.height as f32,
-                            // );
-                            // let mx_ref: &[[f32; 4]; 4] = mx_total.as_ref();
-                            // queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+                            for renderable in self.renderables.iter_mut() {
+                                renderable.resize(size.width, size.height, &self.queue);
+                            }
 
                             self.window.request_redraw();
                         }
@@ -169,16 +160,6 @@ impl Graphics {
                                         occlusion_query_set: None,
                                     });
                                 rpass.push_debug_group("Prepare data for draw.");
-                                // rpass.set_pipeline(&render_pipeline);
-                                // rpass.set_bind_group(0, &bind_group, &[]);
-                                // rpass.set_index_buffer(
-                                //     index_buf.slice(..),
-                                //     wgpu::IndexFormat::Uint16,
-                                // );
-                                // rpass.set_vertex_buffer(0, vertex_buf.slice(..));
-                                // rpass.pop_debug_group();
-                                // rpass.insert_debug_marker("Draw!");
-                                // rpass.draw_indexed(0..index_count as u32, 0, 0..1);
                                 for renderable in self.renderables.iter_mut() {
                                     renderable.render(&mut rpass, &self.queue);
                                 }

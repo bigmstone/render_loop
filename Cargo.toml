@@ -3,11 +3,12 @@ name = "render_loop"
 version = "2023.12.1"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [workspace]
-members = ["crates/*"]
-default_members = ["crates/*"]
+members = [
+    "crates/*",
+    "examples/*"
+]
+default-members = ["crates/*", "examples/*"]
 
 [workspace.package]
 version = "2023.12.1"
@@ -17,5 +18,14 @@ repository = ""
 authors = ["Matthew Stone <dev@mattstone.io>"]
 edition = "2021"
 
+
 [dependencies]
-winit = "0.29"
+rl_graphics = { path = "./crates/rl_graphics" }
+
+env_logger = "0.11"
+log = "0.4"
+
+pollster = "0.3"
+nalgebra = "0.33"
+bytemuck = { version = "1.16", features = ["derive"] }
+

@@ -1,0 +1,21 @@
+[package]
+name = "render_loop"
+version = "2023.12.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["crates/*"]
+default_members = ["crates/*"]
+
+[workspace.package]
+version = "2023.12.1"
+description = ""
+documentation = ""
+repository = ""
+authors = ["Matthew Stone <dev@mattstone.io>"]
+edition = "2021"
+
+[dependencies]
+winit = "0.29"
